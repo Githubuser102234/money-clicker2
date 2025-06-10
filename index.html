@@ -97,8 +97,7 @@
             flex-wrap: wrap; /* Allow items to wrap to the next line */
             justify-content: center; /* Center the shop items horizontally */
             gap: 10px; /* Add a small gap between shop items */
-            /* Add this to prevent potential overflow from gap on very small screens */
-            width: 100%;
+            width: 100%; /* Ensure it takes full width for centering its children */
             box-sizing: border-box;
         }
 
@@ -112,9 +111,6 @@
             align-items: center;
             transition: background-color 0.2s;
             cursor: pointer;
-            /* Flex properties for shop items to wrap properly */
-            flex-basis: calc(100% - 20px); /* Default to full width minus gap on mobile */
-            max-width: calc(100% - 20px);
             box-sizing: border-box; /* Ensure padding is included in width calculation */
         }
 
@@ -173,18 +169,23 @@
                 flex-direction: column; /* Stack all main sections vertically */
                 width: 100%; /* Ensure container takes full width */
                 padding: 10px; /* Reduce container padding on small screens */
+                /* align-items: center is not directly needed here as margin: auto will center */
             }
             #clicker-area,
             #stats-area,
             #shop-area {
-                width: 100%; /* Make each section take full width */
-                margin-bottom: 15px; /* Add spacing between sections */
+                width: 95%; /* Make them a percentage of their parent's width */
+                margin: 0 auto 15px auto; /* NEW: Use auto margins to center horizontally, keep bottom margin for spacing */
                 padding: 15px; /* Adjust padding within sections */
                 flex-basis: auto; /* Allow content to dictate size */
+                box-sizing: border-box; /* Essential for padding/width calculation */
+                max-width: 400px; /* Limit max width for extremely wide phones/small tablets */
             }
             /* Adjust the heading sizes for smaller screens */
             h1 {
                 font-size: 1.8em;
+                margin-bottom: 15px; /* Add spacing below the title */
+                text-align: center; /* Ensure title is centered */
             }
             #money-display {
                 font-size: 7vw; /* Slightly larger for better visibility, still using vw */
