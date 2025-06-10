@@ -35,6 +35,7 @@
             flex-wrap: wrap; /* Allow items to wrap */
             justify-content: space-around;
             gap: 20px; /* Space between sections */
+            position: relative; /* For save notification positioning */
         }
 
         #clicker-area, #stats-area, #shop-area {
@@ -163,19 +164,35 @@
             cursor: not-allowed;
         }
 
+        #save-notification {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        #save-notification.show {
+            opacity: 1;
+        }
+
         /* Responsive adjustments for screens up to 768px wide (typical mobile) */
         @media (max-width: 768px) {
             #game-container {
                 flex-direction: column; /* Stack all main sections vertically */
-                width: 100%; /* Ensure container takes full width */
+                width: 100%; /* Ensure container takes full width for its own padding */
                 padding: 10px; /* Reduce container padding on small screens */
-                /* align-items: center is not directly needed here as margin: auto will center */
             }
             #clicker-area,
             #stats-area,
             #shop-area {
                 width: 95%; /* Make them a percentage of their parent's width */
-                margin: 0 auto 15px auto; /* NEW: Use auto margins to center horizontally, keep bottom margin for spacing */
+                margin: 0 auto 15px auto; /* Use auto margins to center horizontally, keep bottom margin for spacing */
                 padding: 15px; /* Adjust padding within sections */
                 flex-basis: auto; /* Allow content to dictate size */
                 box-sizing: border-box; /* Essential for padding/width calculation */
@@ -227,7 +244,7 @@
     <h1>💵 Advanced Money Clicker 💵</h1>
 
     <div id="game-container">
-        <div id="clicker-area">
+        <div id="save-notification">Game Saved!</div> <div id="clicker-area">
             <div id="money-display">Money: 0</div>
             <span id="click-button">💵</span>
         </div>
@@ -248,29 +265,88 @@
     </div>
 
     <script>
+        // Initial state (if no save data is found)
         let money = 0;
         let clickPower = 1;
         let passiveIncome = 0;
 
-        // Base costs for shop items
-        const shopItems = [
-            { id: 'coinPolish', name: 'Coin Polish', cost: 15, effect: 'clickPower', value: 2, bought: 0, description: '+2 Click Power' },
-            { id: 'budgetAnalyst', name: 'Budget Analyst', cost: 75, effect: 'passiveIncome', value: 2, bought: 0, description: '+2 Passive Income/sec' },
-            { id: 'efficiencyExpert', name: 'Efficiency Expert', cost: 200, effect: 'clickPowerMultiplier', value: 1.2, bought: 0, description: 'Click Power x1.2' },
-            { id: 'atm', name: 'Automated Teller Machine', cost: 400, effect: 'passiveIncome', value: 10, bought: 0, description: '+10 Passive Income/sec' },
-            { id: 'marketResearch', name: 'Market Research Team', cost: 800, effect: 'passiveIncomeMultiplier', value: 1.1, bought: 0, description: 'Passive Income x1.1' },
-            { id: 'viralMarketing', name: 'Viral Marketing Campaign', cost: 1500, effect: 'clickPower', value: 50, bought: 0, description: '+50 Click Power' },
-            { id: 'investmentPortfolio', name: 'Investment Portfolio', cost: 3000, effect: 'passiveIncome', value: 30, bought: 0, description: '+30 Passive Income/sec' },
-            { id: 'roboticArms', name: 'Robotic Arms', cost: 7500, effect: 'clickPower', value: 150, bought: 0, description: '+150 Click Power' },
-            { id: 'globalExpansion', name: 'Global Expansion', cost: 15000, effect: 'passiveIncome', value: 100, bought: 0, description: '+100 Passive Income/sec' },
-            { id: 'financialAI', name: 'Financial AI', cost: 50000, effect: 'both', clickValue: 500, passiveValue: 250, bought: 0, description: '+500 Click Power & +250 Passive Income/sec' },
+        // Base costs for shop items (these define the *type* of item)
+        // 'bought' and 'cost' will be loaded from save data if available
+        const baseShopItems = [
+            { id: 'coinPolish', name: 'Coin Polish', cost: 15, effect: 'clickPower', value: 2, description: '+2 Click Power' },
+            { id: 'budgetAnalyst', name: 'Budget Analyst', cost: 75, effect: 'passiveIncome', value: 2, description: '+2 Passive Income/sec' },
+            { id: 'efficiencyExpert', name: 'Efficiency Expert', cost: 200, effect: 'clickPowerMultiplier', value: 1.2, description: 'Click Power x1.2' },
+            { id: 'atm', name: 'Automated Teller Machine', cost: 400, effect: 'passiveIncome', value: 10, description: '+10 Passive Income/sec' },
+            { id: 'marketResearch', name: 'Market Research Team', cost: 800, effect: 'passiveIncomeMultiplier', value: 1.1, description: 'Passive Income x1.1' },
+            { id: 'viralMarketing', name: 'Viral Marketing Campaign', cost: 1500, effect: 'clickPower', value: 50, description: '+50 Click Power' },
+            { id: 'investmentPortfolio', name: 'Investment Portfolio', cost: 3000, effect: 'passiveIncome', value: 30, description: '+30 Passive Income/sec' },
+            { id: 'roboticArms', name: 'Robotic Arms', cost: 7500, effect: 'clickPower', value: 150, description: '+150 Click Power' },
+            { id: 'globalExpansion', name: 'Global Expansion', cost: 15000, effect: 'passiveIncome', value: 100, description: '+100 Passive Income/sec' },
+            { id: 'financialAI', name: 'Financial AI', cost: 50000, effect: 'both', clickValue: 500, passiveValue: 250, description: '+500 Click Power & +250 Passive Income/sec' },
         ];
+        // This will hold the *current* state of shop items (including bought count and adjusted cost)
+        let shopItems = JSON.parse(JSON.stringify(baseShopItems)); // Deep copy to avoid modifying the base definition
 
         const moneyDisplay = document.getElementById('money-display');
         const clickButton = document.getElementById('click-button');
         const clickPowerDisplay = document.getElementById('click-power-display');
         const passiveIncomeDisplay = document.getElementById('passive-income-display');
         const shopOptionsDiv = document.getElementById('shop-options');
+        const saveNotification = document.getElementById('save-notification');
+
+
+        // --- Save/Load Functions ---
+
+        function saveGame() {
+            const gameData = {
+                money: money,
+                clickPower: clickPower,
+                passiveIncome: passiveIncome,
+                shopItems: shopItems // Save the current state of shopItems
+            };
+            localStorage.setItem('moneyClickerSave', JSON.stringify(gameData));
+            showSaveNotification();
+        }
+
+        function loadGame() {
+            const savedData = localStorage.getItem('moneyClickerSave');
+            if (savedData) {
+                const gameData = JSON.parse(savedData);
+                money = gameData.money || 0; // Use || 0 as fallback for new properties
+                clickPower = gameData.clickPower || 1;
+                passiveIncome = gameData.passiveIncome || 0;
+
+                // Load shop items, merging with base definitions to handle new items or changed properties
+                if (gameData.shopItems) {
+                    shopItems = baseShopItems.map(baseItem => {
+                        const savedItem = gameData.shopItems.find(item => item.id === baseItem.id);
+                        if (savedItem) {
+                            // Merge saved properties with base properties
+                            return {
+                                ...baseItem, // Start with base properties
+                                cost: savedItem.cost,
+                                bought: savedItem.bought,
+                                // Retain original effect/value from baseItem in case they changed in game updates
+                                // unless you specifically want save to override base game logic
+                            };
+                        }
+                        return { ...baseItem, bought: 0 }; // If new item, add with default bought: 0
+                    });
+                }
+                console.log("Game Loaded:", gameData);
+            } else {
+                console.log("No saved game found, starting new game.");
+            }
+        }
+
+        function showSaveNotification() {
+            saveNotification.classList.add('show');
+            setTimeout(() => {
+                saveNotification.classList.remove('show');
+            }, 1500); // Hide after 1.5 seconds
+        }
+
+        // --- Game Logic Functions ---
 
         function updateDisplay() {
             moneyDisplay.textContent = `Money: ${Math.floor(money).toLocaleString()}`;
@@ -282,6 +358,7 @@
         function clickMoney() {
             money += clickPower;
             updateDisplay();
+            saveGame(); // Save on every click
         }
 
         function buyUpgrade(itemId) {
@@ -306,7 +383,8 @@
                 item.cost = Math.floor(item.cost * 1.5);
                 item.bought++;
                 updateDisplay();
-                renderShop();
+                renderShop(); // Re-render shop to update costs/button states
+                saveGame(); // Save after buying an upgrade
             } else if (item) {
                 alert(`Not enough money for ${item.name}! You need ${Math.ceil(item.cost - money).toLocaleString()} more.`);
             }
@@ -350,15 +428,27 @@
         function gameLoop() {
             money += passiveIncome;
             updateDisplay();
+            // You might want to save here less frequently, e.g., every 5 seconds
+            // if (Math.floor(Date.now() / 1000) % 5 === 0) {
+            //     saveGame();
+            // }
         }
+
+        // --- Initial Setup ---
+
+        // Load game state before rendering anything
+        loadGame();
 
         // Event Listeners
         clickButton.addEventListener('click', clickMoney);
 
-        // Initial setup
+        // Render shop and update display based on loaded data
         renderShop();
         updateDisplay();
+
+        // Start passive income and autosave timer
         setInterval(gameLoop, 1000); // Passive income every second
+        setInterval(saveGame, 10000); // Autosave every 10 seconds
     </script>
 </body>
 </html>
