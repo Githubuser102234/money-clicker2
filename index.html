@@ -14,7 +14,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start; /* Align content to the top */
+            justify-content: center; /* Changed: Centers content vertically */
             min-height: 100vh;
             background-color: #28a745; /* Green background */
             color: #fff;
@@ -30,7 +30,7 @@
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
             width: 90%;
             max-width: 900px;
-            display: flex; /* Changed to flex to control children */
+            display: flex;
             flex-direction: row; /* Default to row for larger screens */
             flex-wrap: wrap; /* Allow items to wrap */
             justify-content: space-around;
@@ -43,7 +43,6 @@
             border-radius: 8px;
             box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
             flex: 1; /* Allow these sections to grow */
-            /* Removed min-width from here as it caused issues on smaller screens */
         }
 
         #clicker-area {
