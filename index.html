@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Money Clicker</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* Align content to the top */
+            min-height: 100vh;
+            background-color: #28a745; /* Green background */
+            color: #fff;
+            margin: 0;
+            padding: 20px; /* Add some padding around the content */
+            box-sizing: border-box; /* Include padding in element's total width and height */
+        }
+
+        #game-container {
+            background-color: #343a40; /* Darker background for the game area */
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap; /* Allow items to wrap */
+            justify-content: space-around;
+            gap: 20px; /* Space between sections */
+        }
+
+        #clicker-area, #stats-area, #shop-area {
+            background-color: #495057;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
+            flex: 1; /* Allow these sections to grow */
+            min-width: 280px; /* Minimum width for responsiveness */
+        }
+
+        #clicker-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 8em; /* Large emoji */
+            transition: transform 0.1s ease-in-out;
+            min-height: 200px; /* Ensure clicker area has some height */
+        }
+
+        #clicker-area:active {
+            transform: scale(0.95);
+        }
+
+        #money-display {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-align: center;
+            width: 100%; /* Ensure money display takes full width */
+        }
+
+        #stats-area h2, #shop-area h2 {
+            text-align: center;
+            color: #ffc107; /* Accent color for headings */
+            margin-bottom: 15px;
+        }
+
+        #stats-list li {
+            list-style: none;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .shop-item {
+            background-color: #6c757d;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+
+        .shop-item:hover {
+            background-color: #868e96;
+        }
+
+        .shop-item.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background-color: #5a6268;
+        }
+
+        .shop-item-info {
+            flex-grow: 1;
+        }
+
+        .shop-item-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .shop-item-cost {
+            font-size: 0.9em;
+            color: #e9ecef;
+        }
+
+        .shop-item-description {
+            font-size: 0.85em;
+            color: #ced4da;
+        }
+
+        .shop-item-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s;
+        }
+
+        .shop-item-button:hover:not(.disabled) {
+            background-color: #0056b3;
+        }
+
+        .shop-item-button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            #game-container {
+                flex-direction: column;
+            }
+            #clicker-area, #stats-area, #shop-area {
+                min-width: unset; /* Remove min-width on smaller screens */
+                width: 100%; /* Take full width */
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>💵 Advanced Money Clicker 💵</h1>
+
+    <div id="game-container">
+        <div id="clicker-area">
+            <div id="money-display">Money: 0</div>
+            <span id="click-button">💵</span>
+        </div>
+
+        <div id="stats-area">
+            <h2>Stats</h2>
+            <ul id="stats-list">
+                <li>Click Power: <span id="click-power-display">1</span></li>
+                <li>Passive Income: <span id="passive-income-display">0</span>/sec</li>
+            </ul>
+        </div>
+
+        <div id="shop-area">
+            <h2>Shop</h2>
+            <div id="shop-options">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        let money = 0;
+        let clickPower = 1;
+        let passiveIncome = 0;
+
+        // Base costs for shop items
+        const shopItems = [
+            { id: 'coinPolish', name: 'Coin Polish', cost: 15, effect: 'clickPower', value: 2, bought: 0, description: '+2 Click Power' },
+            { id: 'budgetAnalyst', name: 'Budget Analyst', cost: 75, effect: 'passiveIncome', value: 2, bought: 0, description: '+2 Passive Income/sec' },
+            { id: 'efficiencyExpert', name: 'Efficiency Expert', cost: 200, effect: 'clickPowerMultiplier', value: 1.2, bought: 0, description: 'Click Power x1.2' }, // New effect type
+            { id: 'atm', name: 'Automated Teller Machine', cost: 400, effect: 'passiveIncome', value: 10, bought: 0, description: '+10 Passive Income/sec' },
+            { id: 'marketResearch', name: 'Market Research Team', cost: 800, effect: 'passiveIncomeMultiplier', value: 1.1, bought: 0, description: 'Passive Income x1.1' }, // New effect type
+            { id: 'viralMarketing', name: 'Viral Marketing Campaign', cost: 1500, effect: 'clickPower', value: 50, bought: 0, description: '+50 Click Power' },
+            { id: 'investmentPortfolio', name: 'Investment Portfolio', cost: 3000, effect: 'passiveIncome', value: 30, bought: 0, description: '+30 Passive Income/sec' },
+            { id: 'roboticArms', name: 'Robotic Arms', cost: 7500, effect: 'clickPower', value: 150, bought: 0, description: '+150 Click Power' },
+            { id: 'globalExpansion', name: 'Global Expansion', cost: 15000, effect: 'passiveIncome', value: 100, bought: 0, description: '+100 Passive Income/sec' },
+            { id: 'financialAI', name: 'Financial AI', cost: 50000, effect: 'both', clickValue: 500, passiveValue: 250, bought: 0, description: '+500 Click Power & +250 Passive Income/sec' }, // New effect type
+        ];
+
+        const moneyDisplay = document.getElementById('money-display');
+        const clickButton = document.getElementById('click-button');
+        const clickPowerDisplay = document.getElementById('click-power-display');
+        const passiveIncomeDisplay = document.getElementById('passive-income-display');
+        const shopOptionsDiv = document.getElementById('shop-options');
+
+        function updateDisplay() {
+            moneyDisplay.textContent = `Money: ${Math.floor(money).toLocaleString()}`; // Format money and round down
+            clickPowerDisplay.textContent = clickPower.toLocaleString();
+            passiveIncomeDisplay.textContent = passiveIncome.toLocaleString();
+            updateShopButtons();
+        }
+
+        function clickMoney() {
+            money += clickPower;
+            updateDisplay();
+        }
+
+        function buyUpgrade(itemId) {
+            const item = shopItems.find(item => item.id === itemId);
+            if (item && money >= item.cost) {
+                money -= item.cost;
+                if (item.effect === 'clickPower') {
+                    clickPower += item.value;
+                } else if (item.effect === 'passiveIncome') {
+                    passiveIncome += item.value;
+                } else if (item.effect === 'clickPowerMultiplier') { // New effect handling
+                    clickPower *= item.value;
+                    clickPower = Math.round(clickPower); // Keep click power as whole numbers
+                } else if (item.effect === 'passiveIncomeMultiplier') { // New effect handling
+                    passiveIncome *= item.value;
+                    passiveIncome = Math.round(passiveIncome); // Keep passive income as whole numbers
+                } else if (item.effect === 'both') { // New effect handling for combined upgrades
+                    clickPower += item.clickValue;
+                    passiveIncome += item.passiveValue;
+                }
+
+                item.cost = Math.floor(item.cost * 1.5); // Increase cost for next purchase
+                item.bought++;
+                updateDisplay();
+                renderShop(); // Re-render shop to update costs/button states
+            } else if (item) {
+                alert(`Not enough money for ${item.name}! You need ${Math.ceil(item.cost - money).toLocaleString()} more.`);
+            }
+        }
+
+        function updateShopButtons() {
+            shopItems.forEach(item => {
+                const button = document.getElementById(`buy-${item.id}`);
+                if (button) {
+                    if (money >= item.cost) {
+                        button.disabled = false;
+                        button.parentElement.classList.remove('disabled');
+                    } else {
+                        button.disabled = true;
+                        button.parentElement.classList.add('disabled');
+                    }
+                }
+            });
+        }
+
+        function renderShop() {
+            shopOptionsDiv.innerHTML = ''; // Clear existing shop items
+            shopItems.forEach(item => {
+                const shopItemDiv = document.createElement('div');
+                shopItemDiv.classList.add('shop-item');
+                shopItemDiv.innerHTML = `
+                    <div class="shop-item-info">
+                        <div class="shop-item-name">${item.name} (Bought: ${item.bought})</div>
+                        <div class="shop-item-cost">Cost: ${item.cost.toLocaleString()}</div>
+                        <div class="shop-item-description">${item.description}</div>
+                    </div>
+                    <button id="buy-${item.id}" class="shop-item-button">Buy</button>
+                `;
+                shopOptionsDiv.appendChild(shopItemDiv);
+
+                document.getElementById(`buy-${item.id}`).addEventListener('click', () => buyUpgrade(item.id));
+            });
+            updateShopButtons(); // Set initial button states
+        }
+
+        function gameLoop() {
+            money += passiveIncome;
+            updateDisplay();
+        }
+
+        // Event Listeners
+        clickButton.addEventListener('click', clickMoney);
+
+        // Initial setup
+        renderShop();
+        updateDisplay();
+        setInterval(gameLoop, 1000); // Passive income every second
+    </script>
+</body>
+</html>
