@@ -21,6 +21,7 @@
             margin: 0;
             padding: 20px; /* Add some padding around the content */
             box-sizing: border-box; /* Include padding in element's total width and height */
+            touch-action: manipulation; /* NEW: Prevents double-tap zoom on touch devices */
         }
 
         #game-container {
@@ -175,6 +176,7 @@
             font-size: 0.9em;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
+            z-index: 100; /* Ensure it's above other elements */
         }
 
         #save-notification.show {
@@ -265,7 +267,6 @@
     </div>
 
     <script>
-        // Initial state (if no save data is found)
         let money = 0;
         let clickPower = 1;
         let passiveIncome = 0;
@@ -285,7 +286,8 @@
             { id: 'financialAI', name: 'Financial AI', cost: 50000, effect: 'both', clickValue: 500, passiveValue: 250, description: '+500 Click Power & +250 Passive Income/sec' },
         ];
         // This will hold the *current* state of shop items (including bought count and adjusted cost)
-        let shopItems = JSON.parse(JSON.stringify(baseShopItems)); // Deep copy to avoid modifying the base definition
+        let shopItems; // Declare without initial assignment
+
 
         const moneyDisplay = document.getElementById('money-display');
         const clickButton = document.getElementById('click-button');
@@ -304,44 +306,58 @@
                 passiveIncome: passiveIncome,
                 shopItems: shopItems // Save the current state of shopItems
             };
-            localStorage.setItem('moneyClickerSave', JSON.stringify(gameData));
-            showSaveNotification();
+            try {
+                localStorage.setItem('moneyClickerSave', JSON.stringify(gameData));
+                showSaveNotification();
+            } catch (e) {
+                console.error("Error saving game to localStorage:", e);
+                // Optionally alert the user if storage is full/unavailable
+            }
         }
 
         function loadGame() {
             const savedData = localStorage.getItem('moneyClickerSave');
             if (savedData) {
-                const gameData = JSON.parse(savedData);
-                money = gameData.money || 0; // Use || 0 as fallback for new properties
-                clickPower = gameData.clickPower || 1;
-                passiveIncome = gameData.passiveIncome || 0;
+                try {
+                    const gameData = JSON.parse(savedData);
+                    money = gameData.money || 0; // Use || 0 as fallback for new properties
+                    clickPower = gameData.clickPower || 1;
+                    passiveIncome = gameData.passiveIncome || 0;
 
-                // Load shop items, merging with base definitions to handle new items or changed properties
-                if (gameData.shopItems) {
-                    shopItems = baseShopItems.map(baseItem => {
-                        const savedItem = gameData.shopItems.find(item => item.id === baseItem.id);
-                        if (savedItem) {
-                            // Merge saved properties with base properties
-                            return {
-                                ...baseItem, // Start with base properties
-                                cost: savedItem.cost,
-                                bought: savedItem.bought,
-                                // Retain original effect/value from baseItem in case they changed in game updates
-                                // unless you specifically want save to override base game logic
-                            };
-                        }
-                        return { ...baseItem, bought: 0 }; // If new item, add with default bought: 0
-                    });
+                    // Load shop items, merging with base definitions to handle new items or changed properties
+                    if (gameData.shopItems) {
+                        shopItems = baseShopItems.map(baseItem => {
+                            const savedItem = gameData.shopItems.find(item => item.id === baseItem.id);
+                            if (savedItem) {
+                                // Merge saved properties (cost, bought) with base properties (name, effect, value, description)
+                                return {
+                                    ...baseItem, // Start with base properties from current game version
+                                    cost: savedItem.cost,
+                                    bought: savedItem.bought || 0 // Ensure bought is at least 0
+                                };
+                            }
+                            return { ...baseItem, bought: 0 }; // If new item in base that wasn't in save, initialize it
+                        });
+                    } else {
+                        // If savedData exists but shopItems is missing (e.g., from an old save format)
+                        shopItems = JSON.parse(JSON.stringify(baseShopItems)); // Default to fresh items
+                    }
+                    console.log("Game Loaded:", gameData);
+                } catch (e) {
+                    console.error("Error parsing saved game data:", e);
+                    shopItems = JSON.parse(JSON.stringify(baseShopItems)); // Fallback to new game
                 }
-                console.log("Game Loaded:", gameData);
             } else {
+                // If no saved data, initialize shopItems from baseShopItems
+                shopItems = JSON.parse(JSON.stringify(baseShopItems)); // Deep copy for new game
                 console.log("No saved game found, starting new game.");
             }
         }
 
         function showSaveNotification() {
             saveNotification.classList.add('show');
-            setTimeout(() => {
+            clearTimeout(window.saveNotificationTimer); // Clear any existing timer
+            window.saveNotificationTimer = setTimeout(() => {
                 saveNotification.classList.remove('show');
             }, 1500); // Hide after 1.5 seconds
         }
@@ -412,8 +428,7 @@
                 shopItemDiv.classList.add('shop-item');
                 shopItemDiv.innerHTML = `
                     <div class="shop-item-info">
-                        <div class="shop-item-name">${item.name} (Bought: ${item.bought})</div>
-                        <div class="shop-item-cost">Cost: ${item.cost.toLocaleString()}</div>
+                        <div class="shop-item-name">${item.name} (Bought: ${item.bought || 0})</div> <div class="shop-item-cost">Cost: ${item.cost.toLocaleString()}</div>
                         <div class="shop-item-description">${item.description}</div>
                     </div>
                     <button id="buy-${item.id}" class="shop-item-button">Buy</button>
@@ -428,10 +443,6 @@
         function gameLoop() {
             money += passiveIncome;
             updateDisplay();
-            // You might want to save here less frequently, e.g., every 5 seconds
-            // if (Math.floor(Date.now() / 1000) % 5 === 0) {
-            //     saveGame();
-            // }
         }
 
         // --- Initial Setup ---
