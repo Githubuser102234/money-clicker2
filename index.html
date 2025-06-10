@@ -30,8 +30,8 @@
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
             width: 90%;
             max-width: 900px;
-            display: flex;
-            flex-direction: row;
+            display: flex; /* Changed to flex to control children */
+            flex-direction: row; /* Default to row for larger screens */
             flex-wrap: wrap; /* Allow items to wrap */
             justify-content: space-around;
             gap: 20px; /* Space between sections */
@@ -43,7 +43,7 @@
             border-radius: 8px;
             box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
             flex: 1; /* Allow these sections to grow */
-            /* Removed min-width from here to allow better shrinking on mobile */
+            /* Removed min-width from here as it caused issues on smaller screens */
         }
 
         #clicker-area {
@@ -103,7 +103,6 @@
             align-items: center;
             transition: background-color 0.2s;
             cursor: pointer;
-            /* Flex properties for shop items to wrap properly */
             flex-basis: 100%; /* Default to full width on mobile */
             max-width: 100%;
         }
@@ -157,29 +156,50 @@
             cursor: not-allowed;
         }
 
-        /* Responsive adjustments */
+        /* Responsive adjustments for screens up to 768px wide (typical mobile) */
         @media (max-width: 768px) {
             #game-container {
-                flex-direction: column;
-                width: 100%; /* Ensure game container takes full width on small screens */
-                padding: 10px; /* Reduce padding on small screens */
+                flex-direction: column; /* Stack all main sections vertically */
+                width: 100%; /* Ensure container takes full width */
+                padding: 10px; /* Reduce container padding on small screens */
             }
-            #clicker-area, #stats-area, #shop-area {
-                width: 100%; /* Make sections take full width */
+            #clicker-area,
+            #stats-area,
+            #shop-area {
+                width: 100%; /* Make each section take full width */
                 margin-bottom: 15px; /* Add spacing between sections */
                 padding: 15px; /* Adjust padding within sections */
+                flex-basis: auto; /* Allow content to dictate size */
             }
-            .shop-item {
-                flex-basis: 100%; /* Ensure shop items stack vertically on mobile */
-                max-width: 100%;
+            /* Adjust the heading sizes for smaller screens */
+            h1 {
+                font-size: 1.8em;
+            }
+            #money-display {
+                font-size: 7vw; /* Slightly larger for better visibility, still using vw */
+            }
+            #clicker-area {
+                font-size: 6em; /* Adjust emoji size slightly for smaller screens */
             }
         }
 
-        /* For larger screens, let shop items try to fit side-by-side */
+        /* For larger screens (tablets and desktops), let shop items try to fit side-by-side */
         @media (min-width: 769px) {
             .shop-item {
                 flex-basis: calc(50% - 10px); /* Two items per row with gap */
                 max-width: calc(50% - 10px);
+            }
+            /* Ensure top two boxes are side-by-side on larger screens */
+            #clicker-area {
+                min-width: 280px; /* Re-apply min-width for larger screens */
+                flex-basis: 45%; /* Give it a more defined width */
+            }
+            #stats-area {
+                 min-width: 280px; /* Re-apply min-width for larger screens */
+                 flex-basis: 45%; /* Give it a more defined width */
+            }
+            #shop-area {
+                flex-basis: 100%; /* Shop takes full width below the two top boxes */
             }
         }
     </style>
