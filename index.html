@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced Money Clicker</title>
-    <style>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Money Clicker">
+    <link rel="apple-touch-icon" href="money_icon.png"> <style>
         body {
             font-family: 'Arial', sans-serif;
             display: flex;
@@ -182,14 +186,14 @@
         const shopItems = [
             { id: 'coinPolish', name: 'Coin Polish', cost: 15, effect: 'clickPower', value: 2, bought: 0, description: '+2 Click Power' },
             { id: 'budgetAnalyst', name: 'Budget Analyst', cost: 75, effect: 'passiveIncome', value: 2, bought: 0, description: '+2 Passive Income/sec' },
-            { id: 'efficiencyExpert', name: 'Efficiency Expert', cost: 200, effect: 'clickPowerMultiplier', value: 1.2, bought: 0, description: 'Click Power x1.2' }, // New effect type
+            { id: 'efficiencyExpert', name: 'Efficiency Expert', cost: 200, effect: 'clickPowerMultiplier', value: 1.2, bought: 0, description: 'Click Power x1.2' },
             { id: 'atm', name: 'Automated Teller Machine', cost: 400, effect: 'passiveIncome', value: 10, bought: 0, description: '+10 Passive Income/sec' },
-            { id: 'marketResearch', name: 'Market Research Team', cost: 800, effect: 'passiveIncomeMultiplier', value: 1.1, bought: 0, description: 'Passive Income x1.1' }, // New effect type
+            { id: 'marketResearch', name: 'Market Research Team', cost: 800, effect: 'passiveIncomeMultiplier', value: 1.1, bought: 0, description: 'Passive Income x1.1' },
             { id: 'viralMarketing', name: 'Viral Marketing Campaign', cost: 1500, effect: 'clickPower', value: 50, bought: 0, description: '+50 Click Power' },
             { id: 'investmentPortfolio', name: 'Investment Portfolio', cost: 3000, effect: 'passiveIncome', value: 30, bought: 0, description: '+30 Passive Income/sec' },
             { id: 'roboticArms', name: 'Robotic Arms', cost: 7500, effect: 'clickPower', value: 150, bought: 0, description: '+150 Click Power' },
             { id: 'globalExpansion', name: 'Global Expansion', cost: 15000, effect: 'passiveIncome', value: 100, bought: 0, description: '+100 Passive Income/sec' },
-            { id: 'financialAI', name: 'Financial AI', cost: 50000, effect: 'both', clickValue: 500, passiveValue: 250, bought: 0, description: '+500 Click Power & +250 Passive Income/sec' }, // New effect type
+            { id: 'financialAI', name: 'Financial AI', cost: 50000, effect: 'both', clickValue: 500, passiveValue: 250, bought: 0, description: '+500 Click Power & +250 Passive Income/sec' },
         ];
 
         const moneyDisplay = document.getElementById('money-display');
@@ -199,7 +203,7 @@
         const shopOptionsDiv = document.getElementById('shop-options');
 
         function updateDisplay() {
-            moneyDisplay.textContent = `Money: ${Math.floor(money).toLocaleString()}`; // Format money and round down
+            moneyDisplay.textContent = `Money: ${Math.floor(money).toLocaleString()}`;
             clickPowerDisplay.textContent = clickPower.toLocaleString();
             passiveIncomeDisplay.textContent = passiveIncome.toLocaleString();
             updateShopButtons();
@@ -218,21 +222,21 @@
                     clickPower += item.value;
                 } else if (item.effect === 'passiveIncome') {
                     passiveIncome += item.value;
-                } else if (item.effect === 'clickPowerMultiplier') { // New effect handling
+                } else if (item.effect === 'clickPowerMultiplier') {
                     clickPower *= item.value;
-                    clickPower = Math.round(clickPower); // Keep click power as whole numbers
-                } else if (item.effect === 'passiveIncomeMultiplier') { // New effect handling
+                    clickPower = Math.round(clickPower);
+                } else if (item.effect === 'passiveIncomeMultiplier') {
                     passiveIncome *= item.value;
-                    passiveIncome = Math.round(passiveIncome); // Keep passive income as whole numbers
-                } else if (item.effect === 'both') { // New effect handling for combined upgrades
+                    passiveIncome = Math.round(passiveIncome);
+                } else if (item.effect === 'both') {
                     clickPower += item.clickValue;
                     passiveIncome += item.passiveValue;
                 }
 
-                item.cost = Math.floor(item.cost * 1.5); // Increase cost for next purchase
+                item.cost = Math.floor(item.cost * 1.5);
                 item.bought++;
                 updateDisplay();
-                renderShop(); // Re-render shop to update costs/button states
+                renderShop();
             } else if (item) {
                 alert(`Not enough money for ${item.name}! You need ${Math.ceil(item.cost - money).toLocaleString()} more.`);
             }
@@ -254,7 +258,7 @@
         }
 
         function renderShop() {
-            shopOptionsDiv.innerHTML = ''; // Clear existing shop items
+            shopOptionsDiv.innerHTML = '';
             shopItems.forEach(item => {
                 const shopItemDiv = document.createElement('div');
                 shopItemDiv.classList.add('shop-item');
@@ -270,7 +274,7 @@
 
                 document.getElementById(`buy-${item.id}`).addEventListener('click', () => buyUpgrade(item.id));
             });
-            updateShopButtons(); // Set initial button states
+            updateShopButtons();
         }
 
         function gameLoop() {
