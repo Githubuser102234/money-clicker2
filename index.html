@@ -97,20 +97,24 @@
             flex-wrap: wrap; /* Allow items to wrap to the next line */
             justify-content: center; /* Center the shop items horizontally */
             gap: 10px; /* Add a small gap between shop items */
+            /* Add this to prevent potential overflow from gap on very small screens */
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .shop-item {
             background-color: #6c757d;
             padding: 15px;
-            margin-bottom: 10px; /* Keep vertical margin for spacing */
+            margin-bottom: 0; /* Remove individual item bottom margin, use gap on parent instead */
             border-radius: 5px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             transition: background-color 0.2s;
             cursor: pointer;
-            flex-basis: 100%; /* Default to full width on mobile */
-            max-width: 100%;
+            /* Flex properties for shop items to wrap properly */
+            flex-basis: calc(100% - 20px); /* Default to full width minus gap on mobile */
+            max-width: calc(100% - 20px);
             box-sizing: border-box; /* Ensure padding is included in width calculation */
         }
 
@@ -188,10 +192,11 @@
             #clicker-area {
                 font-size: 6em; /* Adjust emoji size slightly for smaller screens */
             }
+            /* Shop item adjustments for true mobile stacking and centering */
             .shop-item {
-                /* On small screens, items will take up 100% width and stack, centered by #shop-options */
-                flex-basis: 100%;
+                flex-basis: 100%; /* Ensure shop items stack vertically and take full width */
                 max-width: 100%;
+                margin-bottom: 0; /* Rely on gap for vertical spacing */
             }
         }
 
@@ -200,6 +205,7 @@
             .shop-item {
                 flex-basis: calc(50% - 10px); /* Two items per row with gap */
                 max-width: calc(50% - 10px);
+                margin-bottom: 0; /* Use gap for spacing */
             }
             /* Ensure top two boxes are side-by-side on larger screens */
             #clicker-area {
