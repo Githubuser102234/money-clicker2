@@ -62,11 +62,24 @@
         }
 
         #money-display {
-            font-size: 1.3em; /* Further reduced: Smaller font size for money text for mobile */
+            font-size: 5vw; /* Adjusted: Uses viewport width for better mobile scaling */
+            white-space: nowrap; /* Prevents money text from wrapping */
+            overflow: hidden; /* Hides overflowing text if any */
+            text-overflow: ellipsis; /* Adds "..." if text overflows (though nowrap should prevent most of it) */
             margin-bottom: 20px;
             text-align: center;
             width: 100%; /* Ensure money display takes full width */
+            box-sizing: border-box; /* Include padding/border in element's total width */
+            padding: 0 5px; /* Add slight horizontal padding to prevent text from touching edges */
         }
+
+        /* Adjust font size for larger screens where 5vw might be too big */
+        @media (min-width: 769px) {
+            #money-display {
+                font-size: 2.5em; /* Larger size for desktop, relative to parent font */
+            }
+        }
+
 
         #stats-area h2, #shop-area h2 {
             text-align: center;
