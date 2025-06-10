@@ -21,7 +21,7 @@
             margin: 0;
             padding: 20px; /* Add some padding around the content */
             box-sizing: border-box; /* Include padding in element's total width and height */
-            touch-action: manipulation; /* NEW: Prevents double-tap zoom on touch devices */
+            touch-action: manipulation; /* Prevents double-tap zoom on touch devices */
         }
 
         #game-container {
@@ -165,7 +165,7 @@
             cursor: not-allowed;
         }
 
-        #save-notification {
+        #save-notification, #offline-earnings-notification {
             position: absolute;
             top: 10px;
             right: 10px;
@@ -179,7 +179,13 @@
             z-index: 100; /* Ensure it's above other elements */
         }
 
-        #save-notification.show {
+        #offline-earnings-notification {
+            top: 40px; /* Position below save notification */
+            right: 10px;
+            background-color: rgba(0, 123, 255, 0.8); /* Blue background */
+        }
+
+        #save-notification.show, #offline-earnings-notification.show {
             opacity: 1;
         }
 
@@ -246,7 +252,7 @@
     <h1>💵 Advanced Money Clicker 💵</h1>
 
     <div id="game-container">
-        <div id="save-notification">Game Saved!</div> <div id="clicker-area">
+        <div id="save-notification">Game Saved!</div> <div id="offline-earnings-notification"></div> <div id="clicker-area">
             <div id="money-display">Money: 0</div>
             <span id="click-button">💵</span>
         </div>
@@ -270,9 +276,9 @@
         let money = 0;
         let clickPower = 1;
         let passiveIncome = 0;
+        let lastSaveTime = Date.now(); // Initialize for new games
 
         // Base costs for shop items (these define the *type* of item)
-        // 'bought' and 'cost' will be loaded from save data if available
         const baseShopItems = [
             { id: 'coinPolish', name: 'Coin Polish', cost: 15, effect: 'clickPower', value: 2, description: '+2 Click Power' },
             { id: 'budgetAnalyst', name: 'Budget Analyst', cost: 75, effect: 'passiveIncome', value: 2, description: '+2 Passive Income/sec' },
@@ -295,6 +301,7 @@
         const passiveIncomeDisplay = document.getElementById('passive-income-display');
         const shopOptionsDiv = document.getElementById('shop-options');
         const saveNotification = document.getElementById('save-notification');
+        const offlineEarningsNotification = document.getElementById('offline-earnings-notification');
 
 
         // --- Save/Load Functions ---
@@ -304,7 +311,8 @@
                 money: money,
                 clickPower: clickPower,
                 passiveIncome: passiveIncome,
-                shopItems: shopItems // Save the current state of shopItems
+                shopItems: shopItems, // Save the current state of shopItems
+                lastSaveTime: Date.now() // NEW: Save current timestamp
             };
             try {
                 localStorage.setItem('moneyClickerSave', JSON.stringify(gameData));
@@ -320,36 +328,49 @@
             if (savedData) {
                 try {
                     const gameData = JSON.parse(savedData);
-                    money = gameData.money || 0; // Use || 0 as fallback for new properties
+                    money = gameData.money || 0;
                     clickPower = gameData.clickPower || 1;
                     passiveIncome = gameData.passiveIncome || 0;
+                    lastSaveTime = gameData.lastSaveTime || Date.now(); // NEW: Load last save time, fallback to now
 
-                    // Load shop items, merging with base definitions to handle new items or changed properties
+                    // Calculate offline earnings
+                    const currentTime = Date.now();
+                    const timeElapsedSeconds = Math.floor((currentTime - lastSaveTime) / 1000); // In seconds
+                    const offlineEarnings = passiveIncome * timeElapsedSeconds;
+
+                    if (offlineEarnings > 0) {
+                        money += offlineEarnings;
+                        showOfflineEarningsNotification(offlineEarnings, timeElapsedSeconds);
+                    }
+
+                    // Load shop items, merging with base definitions
                     if (gameData.shopItems) {
                         shopItems = baseShopItems.map(baseItem => {
                             const savedItem = gameData.shopItems.find(item => item.id === baseItem.id);
                             if (savedItem) {
-                                // Merge saved properties (cost, bought) with base properties (name, effect, value, description)
                                 return {
-                                    ...baseItem, // Start with base properties from current game version
+                                    ...baseItem,
                                     cost: savedItem.cost,
-                                    bought: savedItem.bought || 0 // Ensure bought is at least 0
+                                    bought: savedItem.bought || 0
                                 };
                             }
-                            return { ...baseItem, bought: 0 }; // If new item in base that wasn't in save, initialize it
+                            return { ...baseItem, bought: 0 };
                         });
                     } else {
                         // If savedData exists but shopItems is missing (e.g., from an old save format)
-                        shopItems = JSON.parse(JSON.stringify(baseShopItems)); // Default to fresh items
+                        shopItems = JSON.parse(JSON.stringify(baseShopItems));
                     }
                     console.log("Game Loaded:", gameData);
+                    console.log(`Offline earnings: ${offlineEarnings.toLocaleString()} over ${timeElapsedSeconds} seconds.`);
+
                 } catch (e) {
                     console.error("Error parsing saved game data:", e);
                     shopItems = JSON.parse(JSON.stringify(baseShopItems)); // Fallback to new game
                 }
             } else {
-                // If no saved data, initialize shopItems from baseShopItems
-                shopItems = JSON.parse(JSON.stringify(baseShopItems)); // Deep copy for new game
+                // If no saved data, initialize shopItems from baseShopItems and set lastSaveTime
+                shopItems = JSON.parse(JSON.stringify(baseShopItems));
+                lastSaveTime = Date.now(); // Set initial save time for a new game
                 console.log("No saved game found, starting new game.");
             }
         }
@@ -360,6 +381,19 @@
             window.saveNotificationTimer = setTimeout(() => {
                 saveNotification.classList.remove('show');
             }, 1500); // Hide after 1.5 seconds
+        }
+
+        function showOfflineEarningsNotification(amount, seconds) {
+            const formattedAmount = Math.floor(amount).toLocaleString();
+            const timeUnit = seconds >= 3600 ? `${Math.floor(seconds / 3600)} hours` :
+                             seconds >= 60 ? `${Math.floor(seconds / 60)} minutes` :
+                             `${seconds} seconds`;
+            offlineEarningsNotification.textContent = `Earned ${formattedAmount} offline over ${timeUnit}!`;
+            offlineEarningsNotification.classList.add('show');
+            clearTimeout(window.offlineNotificationTimer); // Clear any existing timer
+            window.offlineNotificationTimer = setTimeout(() => {
+                offlineEarningsNotification.classList.remove('show');
+            }, 3000); // Show for 3 seconds
         }
 
         // --- Game Logic Functions ---
@@ -374,7 +408,9 @@
         function clickMoney() {
             money += clickPower;
             updateDisplay();
-            saveGame(); // Save on every click
+            // Saving on every click can be frequent, but good for critical actions.
+            // Autosave interval also handles less frequent saves.
+            saveGame();
         }
 
         function buyUpgrade(itemId) {
@@ -428,7 +464,8 @@
                 shopItemDiv.classList.add('shop-item');
                 shopItemDiv.innerHTML = `
                     <div class="shop-item-info">
-                        <div class="shop-item-name">${item.name} (Bought: ${item.bought || 0})</div> <div class="shop-item-cost">Cost: ${item.cost.toLocaleString()}</div>
+                        <div class="shop-item-name">${item.name} (Bought: ${item.bought || 0})</div>
+                        <div class="shop-item-cost">Cost: ${item.cost.toLocaleString()}</div>
                         <div class="shop-item-description">${item.description}</div>
                     </div>
                     <button id="buy-${item.id}" class="shop-item-button">Buy</button>
