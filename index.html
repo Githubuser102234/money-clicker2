@@ -43,7 +43,7 @@
             border-radius: 8px;
             box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
             flex: 1; /* Allow these sections to grow */
-            min-width: 280px; /* Minimum width for responsiveness */
+            /* Removed min-width from here to allow better shrinking on mobile */
         }
 
         #clicker-area {
@@ -62,7 +62,7 @@
         }
 
         #money-display {
-            font-size: 5vw; /* Adjusted: Uses viewport width for better mobile scaling */
+            font-size: 5vw; /* Uses viewport width for better mobile scaling */
             white-space: nowrap; /* Prevents money text from wrapping */
             overflow: hidden; /* Hides overflowing text if any */
             text-overflow: ellipsis; /* Adds "..." if text overflows (though nowrap should prevent most of it) */
@@ -103,6 +103,9 @@
             align-items: center;
             transition: background-color 0.2s;
             cursor: pointer;
+            /* Flex properties for shop items to wrap properly */
+            flex-basis: 100%; /* Default to full width on mobile */
+            max-width: 100%;
         }
 
         .shop-item:hover {
@@ -158,10 +161,25 @@
         @media (max-width: 768px) {
             #game-container {
                 flex-direction: column;
+                width: 100%; /* Ensure game container takes full width on small screens */
+                padding: 10px; /* Reduce padding on small screens */
             }
             #clicker-area, #stats-area, #shop-area {
-                min-width: unset; /* Remove min-width on smaller screens */
-                width: 100%; /* Take full width */
+                width: 100%; /* Make sections take full width */
+                margin-bottom: 15px; /* Add spacing between sections */
+                padding: 15px; /* Adjust padding within sections */
+            }
+            .shop-item {
+                flex-basis: 100%; /* Ensure shop items stack vertically on mobile */
+                max-width: 100%;
+            }
+        }
+
+        /* For larger screens, let shop items try to fit side-by-side */
+        @media (min-width: 769px) {
+            .shop-item {
+                flex-basis: calc(50% - 10px); /* Two items per row with gap */
+                max-width: calc(50% - 10px);
             }
         }
     </style>
